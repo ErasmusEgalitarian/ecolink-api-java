@@ -1,0 +1,105 @@
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+    - navigation.tabs
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - toc.integrate
+    - toc.collapse
+    - navigation.expand
+    - navigation.instant
+    - navigation.top
+    - navigation.tracking
+    - navigation.sections
+    - navigation.indexes
+    - navigation.tabs.sticky
+  palette:
+    - scheme: default
+      primary: teal
+      accent: green
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - scheme: slate
+      primary: teal
+      accent: green
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+site_name: Ecolink
+site_description: Technical Documentation for Ecolink Project
+site_author: Cainã Freitas
+repo_url: https://github.com/ErasmusEgalitarian/ecolink-docs
+repo_name: GitHub
+
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-]+'
+
+extra:
+  analytics:
+    provider: google
+    property: UA-XXXXX-Y
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ErasmusEgalitarian/ecolink-docs
+    - icon: fontawesome/brands/instagram
+      link: https://instagram.com/ecolink_project
+
+strict: true
+use_directory_urls: true
+nav:
+  - Home: index.md
+  - Project:
+      - Overview: project/overview.md
+      - Vision & Objectives:
+          - Project Vision: project/vision-objectives/vision.md
+          - Project Objectives: project/vision-objectives/objectives.md
+      - Stakeholders: project/stakeholders.md
+      - Product:
+          - Product Overview: project/product/overview.md
+          - Product Backlog: project/product/product-backlog-building.md
+          - MVPs: project/product/mvp.md
+  - Egalitarian:
+      - Hub: project/egalitarian/egalitarian.md
+      - Cycles:
+          - 2023:
+              - Cycle 1: project/egalitarian/cycles/2023-2.md
+          - 2024:
+              - Cycle 1: project/egalitarian/cycles/2024-1.md
+              - Cycle 2: project/egalitarian/cycles/2024-2.md
+          - 2025:
+              - Cycle 1: project/egalitarian/cycles/2025-1.md
+  - Management:
+      - Roadmap: project/management/roadmap.md
+      - Workflow: project/management/workflow.md
+      - Issue Tracking & Task Management: project/management/issue-tracking.md
+      - Project Deliverables: project/management/deliverables.md
+      - Meeting: project/management/meetings.md
+      - Lessons Learned: project/management/lessons-learned.md
+      - Sprints:
+          - Sprint Overview: project/management/sprints/sprint.md
+          - Sprint 1: project/management/sprints/sprint1.md
+  - Development Process:
+      - Software Development Lifecycle: project/development/lifecycle.md
+      - Technical Documentation:
+          - API Documentation: project/development/technical/api.md
+          - System Architecture: project/development/technical/architecture.md
+          - Database Schema: project/development/technical/database-schema.md
+      - Tools & Dependencies: project/development/tools.md
+      - Contributing Policy: project/development/policies.md
+  - Setup & Configuration:
+      - MkDocs:
+          - MkDocs Configuration: setup/mkdocs-configuration.md
+          - MkDocs Setup: setup/mkdocs-setup.md
+      - Environment Setup:
+          - Python Virtual Environment: setup/python-venv-setup.md
+          - Publishing Guide: setup/publishing-guide.md
+      - README: setup/readme.md
+  - References: references.md
