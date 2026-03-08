@@ -33,7 +33,7 @@ public class BookController {
     }
 
     @PostMapping() //ResponseEntity is a change made by AI, as i struglled with finding a way to send the 201 response.
-    //Here is a link exaplaining for use later on in project: https://www.baeldung.com/spring-response-entity
+    //Here is a link exaplaining for use for myself later on in project: https://www.baeldung.com/spring-response-entity
     public ResponseEntity<Book> createBook(@Valid @RequestBody Book book){
         Book created = bookService.create(book);
         return ResponseEntity.status(201).body(created);
