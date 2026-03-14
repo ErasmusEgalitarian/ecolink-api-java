@@ -1,58 +1,79 @@
 package com.example.demo.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.geo.GeoResult;
+import org.springframework.data.geo.GeoResults;
+import org.springframework.data.geo.Metrics;
+import org.springframework.data.geo.Point;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.dto.EcoPointListItemDTO;
 import com.example.demo.model.EcoPoint;
 import com.example.demo.repository.EcoPointRepository;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class EcoPointService {
 
     private final EcoPointRepository repository;
+    private final MongoTemplate mongoTemplate;
 
-    public EcoPointService(EcoPointRepository repository) {
+    public EcoPointService(EcoPointRepository repository, MongoTemplate mongoTemplate) {
         this.repository = repository;
+        this.mongoTemplate = mongoTemplate;
     }
 
     public Page<EcoPointListItemDTO> getEcoPoints(Double lat, Double lng, int page, int limit) { // henter alle aktive EcoPoints med paginering
 
-
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by("name").ascending());
 
-        Page<EcoPoint> ecoPoints = repository.findAllByIsActiveTrue(pageable);
+        if (lat != null && lng != null) {
+            NearQuery nearQuery = NearQuery
+                    .near(new Point(lng, lat), Metrics.KILOMETERS)
+                    .spherical(true)
+                    .limit(limit)
+                    .skip((long)(page - 1) * limit);
 
-        return ecoPoints.map(ep -> {
-            Double distanceKm = null;
-            if (lat != null && lng != null) {
-                distanceKm = calculateDistance(lat, lng, // bruger Haversine-formlen en matematisk formel til at beregne afstand mellem to GPS-koordinater
-                        ep.getCoordinates().getY(),
-                        ep.getCoordinates().getX());
+            GeoResults<EcoPoint> results = mongoTemplate.geoNear(nearQuery, EcoPoint.class);
+
+            List<EcoPointListItemDTO> items = new ArrayList<>();
+            for (GeoResult<EcoPoint> geoResult : results.getContent()) {
+                EcoPoint ep = geoResult.getContent();
+                double distanceKm = geoResult.getDistance().getValue();
+                items.add(new EcoPointListItemDTO(
+                        ep.getId(),
+                        ep.getName(),
+                        ep.getAddress(),
+                        distanceKm,
+                        ep.getAcceptedMaterials(),
+                        ep.getStatus(),
+                        ep.getPhotos() != null && !ep.getPhotos().isEmpty() ? ep.getPhotos().get(0) : null
+                ));
             }
-            return new EcoPointListItemDTO(
+
+            long total = results.getContent().size();
+            return new PageImpl<>(items, PageRequest.of(page - 1, limit), total);
+        }
+
+        else {
+            Page<EcoPoint> ecoPoints = repository.findAllByIsActiveTrue(pageable);
+            return ecoPoints.map(ep -> new EcoPointListItemDTO(
                     ep.getId(),
                     ep.getName(),
                     ep.getAddress(),
-                    distanceKm,
+                    null, // ingen distance
                     ep.getAcceptedMaterials(),
                     ep.getStatus(),
                     ep.getPhotos() != null && !ep.getPhotos().isEmpty() ? ep.getPhotos().get(0) : null
-            );
-        });
-    }
-
-    private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
-        final int R = 6371;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLng = Math.toRadians(lng2 - lng1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return Math.round(R * c * 100.0) / 100.0;
+            ));
+        }
     }
 } // EcoPointService.java henter EcoPoints fra databasen,
 // beregner distancen til brugeren med Haversine-formlen, og pakker dem ind i en liste.
