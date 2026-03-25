@@ -1,13 +1,12 @@
 package com.ecolink.api.dto;
 
 import java.time.LocalDate;
-
-import com.ecolink.api.model.ConditionEcopoint;
-import com.ecolink.api.model.StatusEcopoint;
+import com.ecolink.api.model.enums.ConditionEcopoint;
+import com.ecolink.api.model.enums.StatusEcopoint;
 
 public class ResponseEcopoint {
 	
-	private final String id; // vi bruger final så man ikke kan ændre på navnet igen
+	private final String id;
 	private final String name;
 	private final double latitude;
 	private final double longitude;
@@ -19,7 +18,7 @@ public class ResponseEcopoint {
 	public ResponseEcopoint(String id, String name, double latitude, double longitude, LocalDate timeForStatusUpdate,
 		   LocalDate timeForConditionUpdate, StatusEcopoint status, ConditionEcopoint condition) {
 		
-		this.id = id; // ændret til this id, fordi Id ikke på være en variable. Ændre fordi id skal stå med småt
+		this.id = id;
 		this.name = name;
 		this.latitude = latitude;
 		this.longitude = longitude;

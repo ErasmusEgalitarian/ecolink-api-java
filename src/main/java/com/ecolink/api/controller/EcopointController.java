@@ -1,29 +1,53 @@
 package com.ecolink.api.controller;
 
-import java.util.List;
+import com.ecolink.api.dto.EcoPointListItemDTO;
+import com.ecolink.api.service.EcoPointService;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.ecolink.api.dto.APIResponse;
-import com.ecolink.api.model.Ecopoint;
-import com.ecolink.api.service.LocationEcopointService;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/ecopoints")
+@RequestMapping("/api")
 public class EcopointController {
 
-	private final LocationEcopointService EcopointList;
+	private final EcoPointService ecoPointService;
 
-	public EcopointController(LocationEcopointService ecopointList) {
-		super();
-		EcopointList = ecopointList;
+	public EcopointController(EcoPointService ecoPointService) {
+		this.ecoPointService = ecoPointService;
 	}
-	 @GetMapping("/nearby")
-	 public APIResponse getNearbyEcopoints(@RequestParam Double lat, @RequestParam Double lng, @RequestParam(required = false, defaultValue = "10") Double radius) {
-		 List<Ecopoint> result = EcopointList.findNearby(lng, lat, radius);
-		 return new APIResponse(true, result, "Closest Ecopoint was found");
-	 }
+
+	@GetMapping("/test")
+	public String test() {
+		return "API is running";
+	}
+
+	@GetMapping("/ecopoints")
+	public ResponseEntity<?> getEcoPoints(
+			@RequestParam(required = false) Double lat,
+			@RequestParam(required = false) Double lng,
+			@RequestParam(defaultValue = "1") int page,
+			@RequestParam(defaultValue = "10") int limit) {
+
+		if (page < 1 || limit < 1 || limit > 50) {
+			return ResponseEntity.badRequest().body(Map.of(
+					"success", false,
+					"message", "Invalid pagination parameters"
+			));
+		}
+
+		Page<EcoPointListItemDTO> result = ecoPointService.getEcoPoints(lat, lng, page, limit);
+
+		return ResponseEntity.ok(Map.of(
+				"success", true,
+				"data", result.getContent(),
+				"pagination", Map.of(
+						"page", page,
+						"limit", limit,
+						"total", result.getTotalElements(),
+						"totalPages", result.getTotalPages()
+				)
+		));
+	}
 }

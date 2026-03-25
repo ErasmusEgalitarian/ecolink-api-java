@@ -1,7 +1,7 @@
 package com.ecolink.api.dto;
 
-import com.ecolink.api.model.ConditionEcopoint;
-import com.ecolink.api.model.StatusEcopoint;
+import com.ecolink.api.model.enums.ConditionEcopoint;
+import com.ecolink.api.model.enums.StatusEcopoint;
 
 public class RequestEcopoint {
 
@@ -12,7 +12,6 @@ public class RequestEcopoint {
 	private ConditionEcopoint Condition;
 	
 	public RequestEcopoint(String name, double latitude, double longitude, StatusEcopoint status, ConditionEcopoint condition) {
-		
 		this.Name = name;
 		this.Latitude = latitude;
 		this.Longitude = longitude;
@@ -42,12 +41,12 @@ public class RequestEcopoint {
 		Condition = condition;
 	}
 	public void setName(String name) {
-    this.Name = name;
+		this.Name = name;
 	}
 	public void setLatitude(double latitude) {
-    this.Latitude = latitude;
+		this.Latitude = latitude;
 	}
 	public void setLongitude(double longitude) {
-    this.Longitude = longitude;
+		this.Longitude = longitude;
 	}
 }
