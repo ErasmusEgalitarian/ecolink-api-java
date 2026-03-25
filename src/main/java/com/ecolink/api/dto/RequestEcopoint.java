@@ -12,12 +12,11 @@ public class RequestEcopoint {
 	private ConditionEcopoint Condition;
 	
 	public RequestEcopoint(String name, double latitude, double longitude, StatusEcopoint status, ConditionEcopoint condition) {
-		
-		Name = name;
-		Latitude = latitude;
-		Longitude = longitude;
-		Status = status;
-		Condition = condition;
+		this.Name = name;
+		this.Latitude = latitude;
+		this.Longitude = longitude;
+		this.Status = status;
+		this.Condition = condition;
 	}
 	
 	public String getName() {
@@ -40,5 +39,14 @@ public class RequestEcopoint {
 	}
 	public void setCondition(ConditionEcopoint condition) {
 		Condition = condition;
+	}
+	public void setName(String name) {
+		this.Name = name;
+	}
+	public void setLatitude(double latitude) {
+		this.Latitude = latitude;
+	}
+	public void setLongitude(double longitude) {
+		this.Longitude = longitude;
 	}
 }

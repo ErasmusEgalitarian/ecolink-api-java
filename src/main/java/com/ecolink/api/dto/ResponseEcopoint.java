@@ -6,38 +6,38 @@ import com.ecolink.api.model.enums.StatusEcopoint;
 
 public class ResponseEcopoint {
 	
-	private String ID; 
-	private String Name;
-	private double Latitude;
-	private double Longitude;
+	private final String id;
+	private final String name;
+	private final double latitude;
+	private final double longitude;
 	private LocalDate TimeForStatusUpdate;
 	private LocalDate TimeForConditionUpdate;
 	private StatusEcopoint  Status;
 	private ConditionEcopoint Condition;
 	
-	public ResponseEcopoint(String iD, String name, double latitude, double longitude, LocalDate timeForStatusUpdate,
+	public ResponseEcopoint(String id, String name, double latitude, double longitude, LocalDate timeForStatusUpdate,
 		   LocalDate timeForConditionUpdate, StatusEcopoint status, ConditionEcopoint condition) {
 		
-		ID = iD;
-		Name = name;
-		Latitude = latitude;
-		Longitude = longitude;
+		this.id = id;
+		this.name = name;
+		this.latitude = latitude;
+		this.longitude = longitude;
 		TimeForStatusUpdate = timeForStatusUpdate;
 		TimeForConditionUpdate = timeForConditionUpdate;
 		Status = status;
 		Condition = condition;
 	}
-	public String getID() {
-		return ID;
+	public String getId() {
+		return id;
 	}
 	public String getName() {
-		return Name;
+		return name;
 	}
 	public double getLatitude() {
-		return Latitude;
+		return latitude;
 	}
 	public double getLongitude() {
-		return Longitude;
+		return longitude;
 	}
 	public LocalDate getTimeForStatusUpdate() {
 		return TimeForStatusUpdate;

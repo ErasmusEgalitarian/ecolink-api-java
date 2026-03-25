@@ -11,12 +11,14 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http
-                .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll()
-                )
-                .httpBasic(Customizer.withDefaults())
-                .build();
+        http
+            .authorizeHttpRequests(request -> request
+                .requestMatchers("/api/Ecopoint/**").hasRole("ADMIN")
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll()
+            )
+            .httpBasic(Customizer.withDefaults());
+
+        return http.build();
     }
 }
