@@ -1,4 +1,17 @@
 package com.ecolink.api.repository;
 
-public class ImageRepository {
+import com.ecolink.api.model.Image;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface ImageRepository extends MongoRepository<Image, String> {
+
+    Page<Image> findByIsPublished(boolean isPublished, Pageable pageable);
+
+    Page<Image> findByCreatedBy(String createdBy, Pageable pageable);
+
+    Page<Image> findByIsPublishedAndCreatedBy(boolean isPublished, String createdBy, Pageable pageable);
 }

@@ -7,7 +7,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class VideoResolutions {
-
     private String thumbnail;
     private String medium;
     private String large;
