@@ -22,7 +22,7 @@ public class Image {
     @Setter
     private String id;
 
-    private ObjectId _id;
+    private String imageUrl;
 
     private String alt_text;
 
@@ -39,23 +39,12 @@ public class Image {
     private Instant updatedAt;
 
     @CreatedBy
-    private User createdBy;
+    private String createdBy;
 
     @Builder.Default
     private Boolean isPublished = false;
 
-    private ObjectId imageUrl;
+    private ImageMetaData imageMetaData;
 
-    resolutions: {
-        thumbnail (GridFS fileId),
-                medium (GridFS fileId),
-                large (GridFS fileId)
-    }
-
-
-    metadata: {
-        fileSize,
-        format,
-        dimensions: { width, height };
-    }
+    private VideoResolutions resolutions;
 }
