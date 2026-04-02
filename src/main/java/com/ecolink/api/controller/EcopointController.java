@@ -2,8 +2,11 @@ package com.ecolink.api.controller;
 
 import com.ecolink.api.dto.EcoPointListItemDTO;
 import com.ecolink.api.service.EcoPointService;
+import com.sun.net.httpserver.Authenticator;
+import jakarta.servlet.http.Part;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -49,5 +52,11 @@ public class EcopointController {
 						"totalPages", result.getTotalPages()
 				)
 		));
+	}
+
+	@PostMapping("/images")
+	public ResponseEntity<?> handleImageUpload(@RequestPart("meta-data") Part metadata, @RequestPart("file-data") FilePart filedata){
+
+		return ResponseEntity.accepted();
 	}
 }
