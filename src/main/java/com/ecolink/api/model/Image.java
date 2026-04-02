@@ -1,8 +1,15 @@
 package com.ecolink.api.model;
 
 import lombok.*;
+import org.apache.catalina.User;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -15,24 +22,40 @@ public class Image {
     @Setter
     private String id;
 
-    private _id;
-    imageUrl (GridFS fileId),
-    alt_text (required),
-    title (required),
-    description,
-    caption,
+    private ObjectId _id;
+
+    private String alt_text;
+
+    private String title;
+
+    private String description;
+
+    private String caption;
+
+    @CreatedDate
+    private Instant uploadedAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
+
+    @CreatedBy
+    private User createdBy;
+
+    @Builder.Default
+    private Boolean isPublished = false;
+
+    private ObjectId imageUrl;
+
     resolutions: {
         thumbnail (GridFS fileId),
                 medium (GridFS fileId),
                 large (GridFS fileId)
-    },
-    uploadedAt,
-    updatedAt,
-    createdBy (userId),
-    isPublished (boolean, default: false),
+    }
+
+
     metadata: {
         fileSize,
         format,
         dimensions: { width, height };
-        }
+    }
 }
