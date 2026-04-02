@@ -54,9 +54,21 @@ public class EcopointController {
 		));
 	}
 
+	//Image upload endpoints
 	@PostMapping("/images")
 	public ResponseEntity<?> handleImageUpload(@RequestPart("meta-data") Part metadata, @RequestPart("file-data") FilePart filedata){
 
 		return ResponseEntity.accepted();
 	}
+
+	@GetMapping("/images")
+	public ResponseEntity<?> ImageDownload(){}
+
+	@PatchMapping("/images")
+	public ResponseEntity<?> ImageUpdate(){}
+
+	@DeleteMapping("/images")
+	public ResponseEntity<?> ImageDelete(){}
+
+
 }
