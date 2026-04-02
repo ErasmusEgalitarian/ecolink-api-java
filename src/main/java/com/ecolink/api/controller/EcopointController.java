@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -56,7 +57,7 @@ public class EcopointController {
 
 	//Image upload endpoints
 	@PostMapping("/images")
-	public ResponseEntity<?> handleImageUpload(@RequestPart("meta-data") Part metadata, @RequestPart("file-data") FilePart filedata){
+	public ResponseEntity<?> handleImageUpload(@RequestPart("meta-data") MultipartFile metadata, @RequestPart("file-data") MultipartFile filedata){
 
 		return ResponseEntity.accepted();
 	}
