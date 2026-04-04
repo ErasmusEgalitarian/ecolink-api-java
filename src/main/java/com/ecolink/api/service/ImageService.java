@@ -37,13 +37,19 @@ public class ImageService {
     }
 
     //used by /images for getting paginated list
-    public Page<Image> getImagesInList(boolean isPublished, String createdBy){
-        //setting local variables
-        int page = 1;
-        int limit = 20;
+        public Page<Image> getImagesInList(Boolean isPublished, String createdBy,int page, int limit){
 
-        PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by("userId").ascending());
 
-    }
+            PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by("updatedAt").descending());
 
+            if (isPublished != null && createdBy != null) {
+                return imageRepository.findByIsPublishedAndCreatedBy(isPublished, createdBy, pageable);
+            } else if (isPublished != null) {
+                return imageRepository.findByIsPublished(isPublished, pageable);
+            } else if (createdBy != null) {
+                return imageRepository.findByCreatedBy(createdBy, pageable);
+            } else {
+                return imageRepository.findAll(pageable);
+            }
+        }
 }

@@ -9,9 +9,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ImageRepository extends MongoRepository<Image, String> {
 
-    Page<Image> findByIsPublished(boolean isPublished, Pageable pageable);
+    Page<Image> findByIsPublished(Boolean isPublished, Pageable pageable);
 
     Page<Image> findByCreatedBy(String createdBy, Pageable pageable);
 
-    Page<Image> findByIsPublishedAndCreatedBy(boolean isPublished, String createdBy, Pageable pageable);
+    Page<Image> findByIsPublishedAndCreatedBy(Boolean isPublished, String createdBy, Pageable pageable);
 }

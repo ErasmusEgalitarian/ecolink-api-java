@@ -70,24 +70,26 @@ public class EcopointController {
 
 
 	/*	GET /api/images returns paginated list of all images (default 20 per page)
-		GET /api/images supports filters: isPublished=true, createdBy=userId
-
-	@GetMapping("/ecopoints")
-	public ResponseEntity<?> getEcoPoints(
-			@RequestParam(required = false) Double lat,
-			@RequestParam(required = false) Double lng,
-			@RequestParam(defaultValue = "1") int page,
-			@RequestParam(defaultValue = "10") int limit) {
-
-	 */
-
-
+		GET /api/images supports filters: isPublished=true, createdBy=userId  */
 	@GetMapping("/images")
 	public ResponseEntity<?> getImageList(
-			@RequestParam(required = false) boolean isPublished,
-			@RequestParam(required = false) String createBy) {
+			@RequestParam(required = false) Boolean isPublished,
+			@RequestParam(required = false) String createdBy,
+			@RequestParam(defaultValue = "1") int page,
+			@RequestParam(defaultValue = "20") int limit) {
 
-		Page<Image> result = get
+		Page<Image> images = imageService.getImagesInList(isPublished, createdBy, page, limit);
+
+		return ResponseEntity.ok(Map.of(
+				"success", true,
+				"data", images.getContent(),
+				"pagination", Map.of(
+						"page", page,
+						"limit", limit,
+						"total", images.getTotalElements(),
+						"totalPages", images.getTotalPages()
+				)
+		));
 	}
 
 	@GetMapping("/images/{id}")
