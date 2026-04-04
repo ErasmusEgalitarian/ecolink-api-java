@@ -1,7 +1,9 @@
 package com.ecolink.api.controller;
 
 import com.ecolink.api.dto.EcoPointListItemDTO;
+import com.ecolink.api.model.Image;
 import com.ecolink.api.service.EcoPointService;
+import com.ecolink.api.service.ImageService;
 import com.sun.net.httpserver.Authenticator;
 import jakarta.servlet.http.Part;
 import org.springframework.data.domain.Page;
@@ -16,10 +18,14 @@ import java.util.Map;
 @RequestMapping("/api")
 public class EcopointController {
 
-	private final EcoPointService ecoPointService;
 
-	public EcopointController(EcoPointService ecoPointService) {
+	//Using constructor injection
+	private final EcoPointService ecoPointService;
+	private final ImageService imageService;
+
+	public EcopointController(EcoPointService ecoPointService, ImageService imageService) {
 		this.ecoPointService = ecoPointService;
+		this.imageService = imageService;
 	}
 
 	@GetMapping("/test")
@@ -63,13 +69,18 @@ public class EcopointController {
 	}
 
 	@GetMapping("/images")
-	public ResponseEntity<?> ImageDownload(){}
+	public ResponseEntity<?> getImageList(){}
+
+	@GetMapping("/images/{id}")
+	public Image getImageById(@PathVariable String id){
+			return imageService.findById(id);
+	}
 
 	@PatchMapping("/images")
-	public ResponseEntity<?> ImageUpdate(){}
+	public ResponseEntity<?> updateImage(){}
 
 	@DeleteMapping("/images")
-	public ResponseEntity<?> ImageDelete(){}
+	public ResponseEntity<?> deleteImage(){}
 
 
 }

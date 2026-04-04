@@ -1,23 +1,32 @@
 package com.ecolink.api.service;
 
+import com.ecolink.api.model.Image;
+import com.ecolink.api.repository.ImageRepository;
 import com.mongodb.client.gridfs.GridFSBucket;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Optional;
 
 @Service
 public class ImageService {
 
     @Autowired
+    private ImageRepository imageRepository;
+
+    @Autowired
     private GridFSBucket imagesGridFsBucket;
 
-    String uploadImage(MultipartFile file, String altText, String title);
-
-    GridFsResource downloadImage(String fileId);
-
-    void deleteImage(String fileId);
-
-
+    public Image findById(String id) {
+        Optional<Image> e = imageRepository.findById(id);
+            if (e.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("Image with id %s not found", id));
+            };
+            return e.get();
+    }
 
 }
