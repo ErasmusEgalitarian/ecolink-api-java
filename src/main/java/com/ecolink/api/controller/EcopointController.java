@@ -78,8 +78,17 @@ public class EcopointController {
 			@RequestParam(defaultValue = "1") int page,
 			@RequestParam(defaultValue = "20") int limit) {
 
+		//Input validation for page and limit
+		if (page < 1 || limit < 1 || limit > 100) {
+			return ResponseEntity.badRequest().body(Map.of(
+					"success", false,
+					"message", "Invalid pagination parameters"));
+		}
+
+		//building the response for the page response
 		Page<Image> images = imageService.getImagesInList(isPublished, createdBy, page, limit);
 
+		//what we will include in our response.
 		return ResponseEntity.ok(Map.of(
 				"success", true,
 				"data", images.getContent(),
@@ -87,10 +96,8 @@ public class EcopointController {
 						"page", page,
 						"limit", limit,
 						"total", images.getTotalElements(),
-						"totalPages", images.getTotalPages()
-				)
-		));
-	}
+						"totalPages", images.getTotalPages())));
+		}
 
 	@GetMapping("/images/{id}")
 	public Image getImageById(@PathVariable String id){
