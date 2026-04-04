@@ -15,12 +15,15 @@ import java.util.Optional;
 @Service
 public class ImageService {
 
+    //Field Injection for imageRepository, and GridFSbucket
     @Autowired
     private ImageRepository imageRepository;
 
     @Autowired
     private GridFSBucket imagesGridFsBucket;
 
+    // Optional<Image> is used because findById may or may not return a result.
+    // It lets us handle the "not found" case explicitly without working directly with null.
     public Image findById(String id) {
         Optional<Image> e = imageRepository.findById(id);
             if (e.isEmpty()) {
