@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.ecolink.api.model.enums.MaterialType;
 
-public class EcoPointListItemDTO {
+public class EcopointListItemDTO {
 
     private String id; 
     private String name; 
@@ -14,7 +14,7 @@ public class EcoPointListItemDTO {
     private String status;
     private String thumbnailUrl;
 
-    public EcoPointListItemDTO(String id, String name, String address,
+    public EcopointListItemDTO(String id, String name, String address,
                                Double distanceKm, List<MaterialType> acceptedMaterials,
                                String status, String thumbnailUrl) {
         this.id = id; // unikt ID på EcoPoint

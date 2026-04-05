@@ -1,16 +1,11 @@
 package com.ecolink.api.controller;
 
-import com.ecolink.api.dto.EcoPointListItemDTO;
-import com.ecolink.api.model.Image;
+import com.ecolink.api.dto.EcopointListItemDTO;
 import com.ecolink.api.service.EcoPointService;
 import com.ecolink.api.service.ImageService;
-import com.sun.net.httpserver.Authenticator;
-import jakarta.servlet.http.Part;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -47,7 +42,7 @@ public class EcopointController {
 			));
 		}
 
-		Page<EcoPointListItemDTO> result = ecoPointService.getEcoPoints(lat, lng, page, limit);
+		Page<EcopointListItemDTO> result = ecoPointService.getEcoPoints(lat, lng, page, limit);
 
 		return ResponseEntity.ok(Map.of(
 				"success", true,

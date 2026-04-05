@@ -1,16 +1,20 @@
 package com.ecolink.api.service;
 
+import com.ecolink.api.dto.UpdateImageRequest;
 import com.ecolink.api.model.Dimensions;
 import com.ecolink.api.model.Image;
 import com.ecolink.api.model.ImageMetaData;
 import com.ecolink.api.repository.ImageRepository;
+import com.mongodb.client.gridfs.GridFSBucket;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,7 +26,6 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-
 @Service
 public class ImageService {
 
@@ -129,4 +132,68 @@ public class ImageService {
                 return imageRepository.findAll(pageable);
             }
         }
+
+    // Used by PATCH /api/images/{id}
+    // Updates only fields sent in the request
+    public Image updateImageMetadata(String id, UpdateImageRequest request, Authentication authentication) {
+
+        Image image = findById(id);
+
+        String currentUsername = authentication.getName();
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        boolean isOwner = image.getCreatedBy() != null &&
+                image.getCreatedBy().equals(currentUsername);
+
+        if (!isOwner && !isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not allowed to update this image");
+        }
+
+        if (request.getAlt_text() != null) {
+            image.setAlt_text(request.getAlt_text());
+        }
+
+        if (request.getTitle() != null) {
+            image.setTitle(request.getTitle());
+        }
+
+        if (request.getDescription() != null) {
+            image.setDescription(request.getDescription());
+        }
+
+        if (request.getCaption() != null) {
+            image.setCaption(request.getCaption());
+        }
+
+        if (request.getIsPublished() != null) {
+            image.setIsPublished(request.getIsPublished());
+        }
+
+        return imageRepository.save(image);
+    }
+
+    // Used by DELETE /api/images/{id}
+    // Deletes image if user is owner or admin
+    public void deleteImage(String id, Authentication authentication) {
+
+        Image image = findById(id);
+
+        String currentUsername = authentication.getName();
+
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        boolean isOwner = image.getCreatedBy() != null &&
+                image.getCreatedBy().equals(currentUsername);
+
+        if (!isOwner && !isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not allowed to delete this image");
+        }
+
+        imageRepository.deleteById(id);
+    }
 }

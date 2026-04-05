@@ -1,5 +1,6 @@
 package com.ecolink.api.service;
 
+import com.ecolink.api.repository.EcopointRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -12,9 +13,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.stereotype.Service;
 
-import com.ecolink.api.dto.EcoPointListItemDTO;
-import com.ecolink.api.model.EcoPoint;
-import com.ecolink.api.repository.EcoPointRepository;
+import com.ecolink.api.dto.EcopointListItemDTO;
+import com.ecolink.api.model.Ecopoint;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,15 +22,15 @@ import java.util.List;
 @Service
 public class EcoPointService {
 
-    private final EcoPointRepository repository;
+    private final EcopointRepository repository;
     private final MongoTemplate mongoTemplate;
 
-    public EcoPointService(EcoPointRepository repository, MongoTemplate mongoTemplate) {
+    public EcoPointService(EcopointRepository repository, MongoTemplate mongoTemplate) {
         this.repository = repository;
         this.mongoTemplate = mongoTemplate;
     }
 
-    public Page<EcoPointListItemDTO> getEcoPoints(Double lat, Double lng, int page, int limit) { // henter alle aktive EcoPoints med paginering
+    public Page<EcopointListItemDTO> getEcoPoints(Double lat, Double lng, int page, int limit) { // henter alle aktive EcoPoints med paginering
 
         PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by("name").ascending());
 
@@ -41,13 +41,13 @@ public class EcoPointService {
                     .limit(limit)
                     .skip((long)(page - 1) * limit);
 
-            GeoResults<EcoPoint> results = mongoTemplate.geoNear(nearQuery, EcoPoint.class);
+            GeoResults<Ecopoint> results = mongoTemplate.geoNear(nearQuery, Ecopoint.class);
 
-            List<EcoPointListItemDTO> items = new ArrayList<>();
-            for (GeoResult<EcoPoint> geoResult : results.getContent()) {
-                EcoPoint ep = geoResult.getContent();
+            List<EcopointListItemDTO> items = new ArrayList<>();
+            for (GeoResult<Ecopoint> geoResult : results.getContent()) {
+                Ecopoint ep = geoResult.getContent();
                 double distanceKm = geoResult.getDistance().getValue();
-                items.add(new EcoPointListItemDTO(
+                items.add(new EcopointListItemDTO(
                         ep.getId(),
                         ep.getName(),
                         ep.getAddress(),
@@ -63,8 +63,8 @@ public class EcoPointService {
         }
 
         else {
-            Page<EcoPoint> ecoPoints = repository.findAllByIsActiveTrue(pageable);
-            return ecoPoints.map(ep -> new EcoPointListItemDTO(
+            Page<Ecopoint> ecoPoints = repository.findAllByIsActiveTrue(pageable);
+            return ecoPoints.map(ep -> new EcopointListItemDTO(
                     ep.getId(),
                     ep.getName(),
                     ep.getAddress(),

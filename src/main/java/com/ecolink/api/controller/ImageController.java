@@ -1,5 +1,6 @@
 package com.ecolink.api.controller;
 
+import com.ecolink.api.dto.UpdateImageRequest;
 import com.ecolink.api.model.Image;
 import com.ecolink.api.service.ImageService;
 import org.springframework.data.domain.Page;
@@ -7,6 +8,7 @@ import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -73,15 +75,26 @@ public class ImageController {
         return imageService.findById(id);
     }
 
-    @PatchMapping("/images")
-    public ResponseEntity<?> updateImage(){
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
+    @PatchMapping("/images/{id}")
+    public ResponseEntity<Image> updateImage(
+            @PathVariable String id,
+            @RequestBody UpdateImageRequest request,
+            Authentication authentication
+    ){
+        Image updatedImage = imageService.updateImageMetadata(id, request, authentication);
+        return ResponseEntity.ok(updatedImage);
     }
 
-    @DeleteMapping("/images")
-    public ResponseEntity<?> deleteImage(){
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
+    // DELETE /api/images/{id}
+    // Deletes a specific image (only owner or admin allowed)
+    @DeleteMapping("/images/{id}")
+    public ResponseEntity<?> deleteImage(
+            @PathVariable String id,
+            Authentication authentication
+    ){
+        imageService.deleteImage(id, authentication);
+
+        // 204 No Content = standard for successful delete
+        return ResponseEntity.noContent().build();
     }
-
-
 }
