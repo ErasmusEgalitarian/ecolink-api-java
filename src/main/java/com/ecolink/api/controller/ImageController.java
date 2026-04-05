@@ -3,10 +3,14 @@ package com.ecolink.api.controller;
 import com.ecolink.api.model.Image;
 import com.ecolink.api.service.ImageService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -22,10 +26,16 @@ public class ImageController {
     }
 
     //Image upload endpoints
-    @PostMapping("/images")
-    public ResponseEntity<?> handleImageUpload(@RequestPart("meta-data") MultipartFile metadata, @RequestPart("file-data") MultipartFile filedata){
-
-        return ResponseEntity.accepted();
+    @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Image> uploadImage(
+            @RequestParam MultipartFile imageFile,
+            @RequestParam String title,
+            @RequestParam("alt_text") String altText,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) String caption
+    ) throws IOException {
+        Image created = imageService.uploadImage(imageFile, title, altText, description, caption);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /*	GET /api/images returns paginated list of all images (default 20 per page)
@@ -64,10 +74,14 @@ public class ImageController {
     }
 
     @PatchMapping("/images")
-    public ResponseEntity<?> updateImage(){}
+    public ResponseEntity<?> updateImage(){
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
+    }
 
     @DeleteMapping("/images")
-    public ResponseEntity<?> deleteImage(){}
+    public ResponseEntity<?> deleteImage(){
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
+    }
 
 
 }

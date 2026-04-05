@@ -46,5 +46,5 @@ public class Image {
 
     private ImageMetaData imageMetaData;
 
-    private VideoResolutions resolutions;
+    private ImageResolutions resolutions;
 }
