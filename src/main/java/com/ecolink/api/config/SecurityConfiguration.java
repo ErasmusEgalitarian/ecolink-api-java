@@ -10,14 +10,14 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfiguration {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(request -> request
-                .requestMatchers("/api/Ecopoint/**").hasRole("ADMIN")
-                .requestMatchers("/api/**").authenticated()
-                .anyRequest().permitAll()
-            )
-            .httpBasic(Customizer.withDefaults());
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll()
+                )
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }

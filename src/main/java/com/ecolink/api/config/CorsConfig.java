@@ -11,7 +11,7 @@ public class CorsConfig implements WebMvcConfigurer {
 	    public void addCorsMappings(CorsRegistry registry) {  
 	        registry.addMapping("/api/**") // Apply CORS to all /api/** endpoints  
 	                .allowedOrigins("http://localhost:3000") // Allow React origin  
-	                .allowedMethods("GET", "POST", "PUT") // Allow specific methods  
+					.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // Allow specific methods
 	                .allowedHeaders("*") // Allow all headers  
 	                .allowCredentials(false) // Enable credentials (e.g., cookies, JWT)  
 	                .maxAge(3600); // Cache preflight for 1 hour  
