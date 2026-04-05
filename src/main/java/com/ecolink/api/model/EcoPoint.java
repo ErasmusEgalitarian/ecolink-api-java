@@ -1,49 +1,106 @@
 package com.ecolink.api.model;
 
-import com.ecolink.api.model.embedded.OperatingHoursEntry;
-import com.ecolink.api.model.enums.MaterialType;
-import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
+import java.util.List;
+
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Document(collection = "ecopoints")
-public class EcoPoint {
-
+@Document(collection = "ecopoints") 
+public class Ecopoint {
 	@Id
 	private String id;
-
-	private String name;
-	private String address;
-
+	private String ecopointName;
+	private String ecopointAddress;
+	private GPSLocations ecopointLocation;
+	private StatusEcopoint ecopointStatus;
+	private ConditionEcopoint ecopointCondition;
+	private String operatingHours;
+	private OperatingEcopoint ecopointOperating;
+	private List<AcceptedMaterial> acceptedMaterials;
+	
 	@GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
-	private GeoJsonPoint coordinates;
+	private GeoJsonPoint location;
+	
+	public Ecopoint() {}
 
-	private String timezone;
-	private List<MaterialType> acceptedMaterials;
-	private String status;
-	private Map<String, OperatingHoursEntry> operatingHours;
-	private String phone;
-	private List<String> photos;
+	public Ecopoint(String ecopointID, String ecopointName, String ecopointAddress,
+			GPSLocations ecopointLocation, StatusEcopoint ecopointStatus, ConditionEcopoint ecopointCondition,
+			String operatingHours, OperatingEcopoint ecopointOperating, GeoJsonPoint location) {
+		super();
+		this.id = ecopointID;
+		this.ecopointName = ecopointName;
+		this.ecopointAddress = ecopointAddress;
+		this.ecopointLocation = ecopointLocation;
+		this.ecopointStatus = ecopointStatus;
+		this.ecopointCondition = ecopointCondition;
+		this.operatingHours = operatingHours;
+		this.ecopointOperating = ecopointOperating;
+		this.location = location;
+	}
+	
+	
+	public String getEcopointID() {
+		return id;
+	}
+	public String getEcopointName() {
+    return ecopointName;
+	}
+	public GPSLocations getEcopointLocation() {
+    return ecopointLocation;
+	}
+	public StatusEcopoint getEcopointStatus() {
+    return ecopointStatus;
+	}	
+	public ConditionEcopoint getEcopointCondition() {
+		return ecopointCondition;
+	}
+	public void setEcopointStatus(StatusEcopoint ecopointStatus) {
+		this.ecopointStatus = ecopointStatus;
+	}
+	public void setEcopointCondition(ConditionEcopoint ecopointCondition) {
+		this.ecopointCondition = ecopointCondition;
+	}
+	public String getEcopointAddress() {
+		return ecopointAddress;
+	}
+	public void setEcopointAddress(String ecopointAddress) {
+		this.ecopointAddress = ecopointAddress;
+	}
+	public OperatingEcopoint getEcopointOperating(){
+		return ecopointOperating;
+	}
+	public void setEcopointOperating(OperatingEcopoint ecopointOperating){
+		this.ecopointOperating = ecopointOperating;	
+	}
+	public String getOperatingHours() {
+		return operatingHours;
+	}
+	public void setOperatingHours(String operatingHours) {
+		this.operatingHours = operatingHours;
+	}
+	public GeoJsonPoint getLocation() {
+		return location;
+	}
+	public void setLocation(GeoJsonPoint location) {
+		this.location = location;
+	}
+	public List<AcceptedMaterial> getAcceptedMaterials() {
+		return acceptedMaterials;
+	}
+	public void setAcceptedMaterials(List<AcceptedMaterial> acceptedMaterials) {
+		this.acceptedMaterials = acceptedMaterials;
+	}
+	public void setEcopointName(String ecopointName) {
+    this.ecopointName = ecopointName;
+	}
 
-	@Builder.Default
-	private boolean isActive = true;
-
-	@CreatedDate
-	private Instant createdAt;
-
-	@LastModifiedDate
-	private Instant updatedAt;
+	public void setEcopointLocation(GPSLocations ecopointLocation) {
+    this.ecopointLocation = ecopointLocation;
+	}
+	public void setId(String id) {
+    this.id = id;
+	}
 }
