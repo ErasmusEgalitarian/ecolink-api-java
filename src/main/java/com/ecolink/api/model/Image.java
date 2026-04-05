@@ -1,0 +1,50 @@
+package com.ecolink.api.model;
+
+import lombok.*;
+import org.apache.catalina.User;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Document(collection = "images")
+public class Image {
+
+    @Id
+    @Setter
+    private String id;
+
+    private String imageUrl;
+
+    private String alt_text;
+
+    private String title;
+
+    private String description;
+
+    private String caption;
+
+    @CreatedDate
+    private Instant uploadedAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
+
+    @CreatedBy
+    private String createdBy;
+
+    @Builder.Default
+    private Boolean isPublished = false;
+
+    private ImageMetaData imageMetaData;
+
+    private ImageResolutions resolutions;
+}

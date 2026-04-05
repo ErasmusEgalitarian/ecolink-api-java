@@ -1,7 +1,8 @@
 package com.ecolink.api.controller;
 
-import com.ecolink.api.dto.EcoPointListItemDTO;
+import com.ecolink.api.dto.EcopointListItemDTO;
 import com.ecolink.api.service.EcoPointService;
+import com.ecolink.api.service.ImageService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,10 +13,14 @@ import java.util.Map;
 @RequestMapping("/api")
 public class EcopointController {
 
-	private final EcoPointService ecoPointService;
 
-	public EcopointController(EcoPointService ecoPointService) {
+	//Using constructor injection
+	private final EcoPointService ecoPointService;
+	private final ImageService imageService;
+
+	public EcopointController(EcoPointService ecoPointService, ImageService imageService) {
 		this.ecoPointService = ecoPointService;
+		this.imageService = imageService;
 	}
 
 	@GetMapping("/test")
@@ -37,7 +42,7 @@ public class EcopointController {
 			));
 		}
 
-		Page<EcoPointListItemDTO> result = ecoPointService.getEcoPoints(lat, lng, page, limit);
+		Page<EcopointListItemDTO> result = ecoPointService.getEcoPoints(lat, lng, page, limit);
 
 		return ResponseEntity.ok(Map.of(
 				"success", true,
