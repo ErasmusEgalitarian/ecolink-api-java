@@ -29,6 +29,8 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import com.mongodb.client.gridfs.model.GridFSUploadOptions;
+import org.bson.Document;
 @Service
 public class ImageService {
 
@@ -88,6 +90,8 @@ public class ImageService {
                 || filename.endsWith(".webp")
                 || filename.endsWith(".gif");
 
+        String resolvedMimeType = resolveMimeType(imageFile);
+
         if (!validContentType && !validExtension) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image format");
         }
@@ -110,11 +114,12 @@ public class ImageService {
             fileId = gridFsTemplate.store(
                     inputStream,
                     imageFile.getOriginalFilename(),
-                    imageFile.getContentType()
+                    resolvedMimeType
             );
         }
 
         String formatName = detectFormatName(filename);
+        String resizedMimeType = formatNameToMimeType(formatName);
 
         BufferedImage thumbnailImage = resizeImage(bufferedImage, 200);
         BufferedImage mediumImage = resizeImage(bufferedImage, 600);
@@ -124,6 +129,7 @@ public class ImageService {
                 thumbnailImage,
                 "thumb_" + imageFile.getOriginalFilename(),
                 formatName,
+                resizedMimeType,
                 thumbnailsGridFsBucket
         );
 
@@ -131,16 +137,16 @@ public class ImageService {
                 mediumImage,
                 "medium_" + imageFile.getOriginalFilename(),
                 formatName,
+                resizedMimeType,
                 mediumGridFsBucket
         );
-
         String largeFileId = storeResizedImage(
                 largeImage,
                 "large_" + imageFile.getOriginalFilename(),
                 formatName,
+                resizedMimeType,
                 largeGridFsBucket
         );
-
         ImageResolutions resolutions = ImageResolutions.builder()
                 .thumbnail(thumbnailFileId)
                 .medium(mediumFileId)
@@ -149,7 +155,7 @@ public class ImageService {
 
         ImageMetaData metaData = ImageMetaData.builder()
                 .fileSize(imageFile.getSize())
-                .format(imageFile.getContentType())
+                .format(resolvedMimeType)
                 .dimensions(new Dimensions(width, height))
                 .build();
 
@@ -240,6 +246,8 @@ public class ImageService {
             image.setIsPublished(request.getIsPublished());
         }
 
+        image.setUpdatedAt(Instant.now());
+
         return imageRepository.save(image);
     }
 
@@ -295,14 +303,18 @@ public class ImageService {
     private String storeResizedImage(BufferedImage image,
                                      String originalFilename,
                                      String formatName,
+                                     String mimeType,
                                      GridFSBucket bucket) throws IOException {
 
         java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
         javax.imageio.ImageIO.write(image, formatName, outputStream);
 
+        Document metadata = new Document("contentType", mimeType);
+        GridFSUploadOptions options = new GridFSUploadOptions().metadata(metadata);
+
         try (java.io.ByteArrayInputStream inputStream =
                      new java.io.ByteArrayInputStream(outputStream.toByteArray())) {
-            ObjectId fileId = bucket.uploadFromStream(originalFilename, inputStream);
+            ObjectId fileId = bucket.uploadFromStream(originalFilename, inputStream, options);
             return fileId.toHexString();
         }
     }
@@ -321,5 +333,33 @@ public class ImageService {
         }
 
         return "png";
+    }
+    private String resolveMimeType(MultipartFile imageFile) {
+        String contentType = imageFile.getContentType();
+        String filename = imageFile.getOriginalFilename() != null
+                ? imageFile.getOriginalFilename().toLowerCase()
+                : "";
+
+        if (contentType != null
+                && !contentType.isBlank()
+                && !contentType.equals("application/octet-stream")) {
+            return contentType;
+        }
+
+        if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) return "image/jpeg";
+        if (filename.endsWith(".png")) return "image/png";
+        if (filename.endsWith(".gif")) return "image/gif";
+        if (filename.endsWith(".webp")) return "image/webp";
+
+        return "image/png";
+    }
+    private String formatNameToMimeType(String formatName) {
+        return switch (formatName.toLowerCase()) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            default -> "image/png";
+        };
     }
 }
