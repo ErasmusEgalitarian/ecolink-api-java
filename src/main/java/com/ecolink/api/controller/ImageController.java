@@ -34,11 +34,11 @@ public class ImageController {
             @RequestPart("title") String title,
             @RequestPart("alt_text") String altText,
             @RequestPart(value = "description", required = false) String description,
-            @RequestPart(value = "caption", required = false) String caption
+            @RequestPart(value = "caption", required = false) String caption,
+            Authentication authentication
     ) throws IOException {
-        System.out.println("CONTROLLER HIT");
 
-        Image created = imageService.uploadImage(imageFile, title, altText, description, caption);
+        Image created = imageService.uploadImage(imageFile, title, altText, description, caption, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 

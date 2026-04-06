@@ -42,11 +42,8 @@ public class ImageService {
                              String title,
                              String altText,
                              String description,
-                             String caption) throws IOException {
-
-        System.out.println("SERVICE HIT");
-        System.out.println("contentType=" + imageFile.getContentType());
-        System.out.println("size=" + imageFile.getSize());
+                             String caption,
+                             Authentication authentication) throws IOException {
 
         if (imageFile == null || imageFile.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image file is required");
@@ -106,6 +103,8 @@ public class ImageService {
                 .dimensions(new Dimensions(width, height))
                 .build();
 
+        String currentUsername = authentication != null ? authentication.getName() : null;
+
         Image image = Image.builder()
                 .imageUrl(fileId.toHexString())
                 .title(title)
@@ -114,6 +113,7 @@ public class ImageService {
                 .caption(caption)
                 .uploadedAt(Instant.now())
                 .updatedAt(Instant.now())
+                .createdBy(currentUsername)
                 .isPublished(false)
                 .imageMetaData(metaData)
                 .build();
