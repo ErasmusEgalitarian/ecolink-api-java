@@ -44,6 +44,10 @@ public class ImageService {
                              String description,
                              String caption) throws IOException {
 
+        System.out.println("SERVICE HIT");
+        System.out.println("contentType=" + imageFile.getContentType());
+        System.out.println("size=" + imageFile.getSize());
+
         if (imageFile == null || imageFile.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image file is required");
         }
@@ -56,8 +60,21 @@ public class ImageService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "alt_text is required");
         }
 
-        List<String> allowedTypes = List.of("image/jpeg", "image/png", "image/webp", "image/gif");
-        if (!allowedTypes.contains(imageFile.getContentType())) {
+        String contentType = imageFile.getContentType();
+        String filename = imageFile.getOriginalFilename() != null
+                ? imageFile.getOriginalFilename().toLowerCase()
+                : "";
+
+        boolean validContentType = List.of("image/jpeg", "image/png", "image/webp", "image/gif")
+                .contains(contentType);
+
+        boolean validExtension = filename.endsWith(".jpg")
+                || filename.endsWith(".jpeg")
+                || filename.endsWith(".png")
+                || filename.endsWith(".webp")
+                || filename.endsWith(".gif");
+
+        if (!validContentType && !validExtension) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image format");
         }
 

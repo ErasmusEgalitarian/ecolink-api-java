@@ -30,12 +30,14 @@ public class ImageController {
     //Image upload endpoints
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Image> uploadImage(
-            @RequestParam MultipartFile imageFile,
-            @RequestParam String title,
-            @RequestParam("alt_text") String altText,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String caption
+            @RequestPart("imageFile") MultipartFile imageFile,
+            @RequestPart("title") String title,
+            @RequestPart("alt_text") String altText,
+            @RequestPart(value = "description", required = false) String description,
+            @RequestPart(value = "caption", required = false) String caption
     ) throws IOException {
+        System.out.println("CONTROLLER HIT");
+
         Image created = imageService.uploadImage(imageFile, title, altText, description, caption);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
