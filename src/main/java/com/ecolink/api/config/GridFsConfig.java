@@ -23,4 +23,19 @@ public class GridFsConfig {
     public GridFSBucket imagesGridFsBucket(MongoDatabaseFactory dbFactory) {
         return GridFSBuckets.create(dbFactory.getMongoDatabase(), "images");
     }
+
+    @Bean
+    public GridFSBucket thumbnailsGridFsBucket(MongoDatabaseFactory dbFactory) {
+        return GridFSBuckets.create(dbFactory.getMongoDatabase(), "images-thumbnails");
+    }
+
+    @Bean
+    public GridFSBucket mediumGridFsBucket(MongoDatabaseFactory dbFactory) {
+        return GridFSBuckets.create(dbFactory.getMongoDatabase(), "images-medium");
+    }
+
+    @Bean
+    public GridFSBucket largeGridFsBucket(MongoDatabaseFactory dbFactory) {
+        return GridFSBuckets.create(dbFactory.getMongoDatabase(), "images-large");
+    }
 }

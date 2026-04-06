@@ -4,6 +4,7 @@ import com.ecolink.api.dto.UpdateImageRequest;
 import com.ecolink.api.model.Dimensions;
 import com.ecolink.api.model.Image;
 import com.ecolink.api.model.ImageMetaData;
+import com.ecolink.api.model.ImageResolutions;
 import com.ecolink.api.repository.ImageRepository;
 import com.mongodb.client.gridfs.GridFSBucket;
 import org.bson.types.ObjectId;
@@ -34,15 +35,25 @@ public class ImageService {
     private final ImageRepository imageRepository;
     private final GridFsTemplate gridFsTemplate;
     private final GridFSBucket imagesGridFsBucket;
+    private final GridFSBucket thumbnailsGridFsBucket;
+    private final GridFSBucket mediumGridFsBucket;
+    private final GridFSBucket largeGridFsBucket;
 
     public ImageService(ImageRepository imageRepository,
                         GridFsTemplate gridFsTemplate,
-                        GridFSBucket imagesGridFsBucket) {
+                        GridFSBucket imagesGridFsBucket,
+                        GridFSBucket thumbnailsGridFsBucket,
+                        GridFSBucket mediumGridFsBucket,
+                        GridFSBucket largeGridFsBucket) {
         this.imageRepository = imageRepository;
         this.gridFsTemplate = gridFsTemplate;
         this.imagesGridFsBucket = imagesGridFsBucket;
+        this.thumbnailsGridFsBucket = thumbnailsGridFsBucket;
+        this.mediumGridFsBucket = mediumGridFsBucket;
+        this.largeGridFsBucket = largeGridFsBucket;
     }
 
+    //used by POST /images
     //used by POST /images
     public Image uploadImage(MultipartFile imageFile,
                              String title,
@@ -103,6 +114,39 @@ public class ImageService {
             );
         }
 
+        String formatName = detectFormatName(filename);
+
+        BufferedImage thumbnailImage = resizeImage(bufferedImage, 200);
+        BufferedImage mediumImage = resizeImage(bufferedImage, 600);
+        BufferedImage largeImage = resizeImage(bufferedImage, 1200);
+
+        String thumbnailFileId = storeResizedImage(
+                thumbnailImage,
+                "thumb_" + imageFile.getOriginalFilename(),
+                formatName,
+                thumbnailsGridFsBucket
+        );
+
+        String mediumFileId = storeResizedImage(
+                mediumImage,
+                "medium_" + imageFile.getOriginalFilename(),
+                formatName,
+                mediumGridFsBucket
+        );
+
+        String largeFileId = storeResizedImage(
+                largeImage,
+                "large_" + imageFile.getOriginalFilename(),
+                formatName,
+                largeGridFsBucket
+        );
+
+        ImageResolutions resolutions = ImageResolutions.builder()
+                .thumbnail(thumbnailFileId)
+                .medium(mediumFileId)
+                .large(largeFileId)
+                .build();
+
         ImageMetaData metaData = ImageMetaData.builder()
                 .fileSize(imageFile.getSize())
                 .format(imageFile.getContentType())
@@ -122,6 +166,7 @@ public class ImageService {
                 .createdBy(currentUsername)
                 .isPublished(false)
                 .imageMetaData(metaData)
+                .resolutions(resolutions)
                 .build();
 
         return imageRepository.save(image);
@@ -218,10 +263,63 @@ public class ImageService {
         }
 
         if (image.getImageUrl() != null && !image.getImageUrl().isBlank()) {
-            ObjectId fileObjectId = new ObjectId(image.getImageUrl());
-            imagesGridFsBucket.delete(fileObjectId);
+            imagesGridFsBucket.delete(new ObjectId(image.getImageUrl()));
+        }
+
+        if (image.getResolutions() != null) {
+            if (image.getResolutions().getThumbnail() != null && !image.getResolutions().getThumbnail().isBlank()) {
+                thumbnailsGridFsBucket.delete(new ObjectId(image.getResolutions().getThumbnail()));
+            }
+
+            if (image.getResolutions().getMedium() != null && !image.getResolutions().getMedium().isBlank()) {
+                mediumGridFsBucket.delete(new ObjectId(image.getResolutions().getMedium()));
+            }
+
+            if (image.getResolutions().getLarge() != null && !image.getResolutions().getLarge().isBlank()) {
+                largeGridFsBucket.delete(new ObjectId(image.getResolutions().getLarge()));
+            }
         }
 
         imageRepository.deleteById(id);
+    }
+
+    private BufferedImage resizeImage(BufferedImage original, int targetWidth) {
+        return org.imgscalr.Scalr.resize(
+                original,
+                org.imgscalr.Scalr.Method.QUALITY,
+                org.imgscalr.Scalr.Mode.FIT_TO_WIDTH,
+                targetWidth
+        );
+    }
+
+    private String storeResizedImage(BufferedImage image,
+                                     String originalFilename,
+                                     String formatName,
+                                     GridFSBucket bucket) throws IOException {
+
+        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(image, formatName, outputStream);
+
+        try (java.io.ByteArrayInputStream inputStream =
+                     new java.io.ByteArrayInputStream(outputStream.toByteArray())) {
+            ObjectId fileId = bucket.uploadFromStream(originalFilename, inputStream);
+            return fileId.toHexString();
+        }
+    }
+
+    private String detectFormatName(String filename) {
+        String lower = filename.toLowerCase();
+
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "jpg";
+        } else if (lower.endsWith(".png")) {
+            return "png";
+        } else if (lower.endsWith(".gif")) {
+            return "gif";
+        } else if (lower.endsWith(".webp")) {
+            return "png";
+        }
+
+        return "png";
     }
 }
