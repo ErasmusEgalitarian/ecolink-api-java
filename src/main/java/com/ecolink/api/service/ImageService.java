@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.HttpStatus;
@@ -31,10 +33,14 @@ public class ImageService {
 
     private final ImageRepository imageRepository;
     private final GridFsTemplate gridFsTemplate;
+    private final GridFSBucket imagesGridFsBucket;
 
-    public ImageService(ImageRepository imageRepository, GridFsTemplate gridFsTemplate) {
+    public ImageService(ImageRepository imageRepository,
+                        GridFsTemplate gridFsTemplate,
+                        GridFSBucket imagesGridFsBucket) {
         this.imageRepository = imageRepository;
         this.gridFsTemplate = gridFsTemplate;
+        this.imagesGridFsBucket = imagesGridFsBucket;
     }
 
     //used by POST /images
@@ -209,6 +215,11 @@ public class ImageService {
         if (!isOwner && !isAdmin) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "You are not allowed to delete this image");
+        }
+
+        if (image.getImageUrl() != null && !image.getImageUrl().isBlank()) {
+            ObjectId fileObjectId = new ObjectId(image.getImageUrl());
+            imagesGridFsBucket.delete(fileObjectId);
         }
 
         imageRepository.deleteById(id);
