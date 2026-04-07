@@ -55,8 +55,7 @@ public class ImageService {
         this.largeGridFsBucket = largeGridFsBucket;
     }
 
-    //used by POST /images
-    //used by POST /images
+
     public Image uploadImage(MultipartFile imageFile,
                              String title,
                              String altText,
@@ -209,41 +208,175 @@ public class ImageService {
 
     // Used by PATCH /api/images/{id}
     // Updates only fields sent in the request
-    public Image updateImageMetadata(String id, UpdateImageRequest request, Authentication authentication) {
+    public Image updateImage(String id,
+                             UpdateImageRequest request,
+                             MultipartFile imageFile,
+                             Authentication authentication) throws IOException {
+
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authentication is required");
+        }
 
         Image image = findById(id);
 
+        // ---- PERMISSION CHECK ----
         String currentUsername = authentication.getName();
 
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
-        boolean isOwner = image.getCreatedBy() != null &&
-                image.getCreatedBy().equals(currentUsername);
+        boolean isOwner = image.getCreatedBy() != null
+                && image.getCreatedBy().equals(currentUsername);
 
         if (!isOwner && !isAdmin) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "You are not allowed to update this image");
+                    "You are not allowed to modify this image");
         }
 
-        if (request.getAlt_text() != null) {
-            image.setAlt_text(request.getAlt_text());
+        // ---- METADATA UPDATE ----
+        if (request != null) {
+
+            if (request.getTitle() != null) {
+                if (request.getTitle().isBlank()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title cannot be blank");
+                }
+                image.setTitle(request.getTitle());
+            }
+
+            if (request.getAlt_text() != null) {
+                if (request.getAlt_text().isBlank()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "alt_text cannot be blank");
+                }
+                image.setAlt_text(request.getAlt_text());
+            }
+
+            if (request.getDescription() != null) {
+                image.setDescription(request.getDescription());
+            }
+
+            if (request.getCaption() != null) {
+                image.setCaption(request.getCaption());
+            }
+
+            if (request.getIsPublished() != null) {
+                image.setIsPublished(request.getIsPublished());
+            }
         }
 
-        if (request.getTitle() != null) {
-            image.setTitle(request.getTitle());
-        }
+        // ---- FILE REPLACEMENT ----
+        if (imageFile != null && !imageFile.isEmpty()) {
 
-        if (request.getDescription() != null) {
-            image.setDescription(request.getDescription());
-        }
+            String contentType = imageFile.getContentType();
+            String filename = imageFile.getOriginalFilename() != null
+                    ? imageFile.getOriginalFilename().toLowerCase()
+                    : "";
 
-        if (request.getCaption() != null) {
-            image.setCaption(request.getCaption());
-        }
+            boolean validContentType = List.of("image/jpeg", "image/png", "image/webp", "image/gif")
+                    .contains(contentType);
 
-        if (request.getIsPublished() != null) {
-            image.setIsPublished(request.getIsPublished());
+            boolean validExtension = filename.endsWith(".jpg")
+                    || filename.endsWith(".jpeg")
+                    || filename.endsWith(".png")
+                    || filename.endsWith(".webp")
+                    || filename.endsWith(".gif");
+
+            if (!validContentType && !validExtension) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image format");
+            }
+
+            long maxSize = 10L * 1024 * 1024;
+            if (imageFile.getSize() > maxSize) {
+                throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "File too large");
+            }
+
+            BufferedImage bufferedImage = ImageIO.read(imageFile.getInputStream());
+            if (bufferedImage == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid image file");
+            }
+
+            int width = bufferedImage.getWidth();
+            int height = bufferedImage.getHeight();
+
+            String resolvedMimeType = resolveMimeType(imageFile);
+
+            String originalFilename = imageFile.getOriginalFilename() != null
+                    ? imageFile.getOriginalFilename()
+                    : "image";
+
+            String lowerFilename = originalFilename.toLowerCase();
+            String formatName = detectFormatName(lowerFilename);
+            String resizedMimeType = formatNameToMimeType(formatName);
+
+            // ---- UPLOAD NEW ORIGINAL ----
+            ObjectId newOriginalFileId;
+            try (InputStream inputStream = imageFile.getInputStream()) {
+                newOriginalFileId = gridFsTemplate.store(
+                        inputStream,
+                        originalFilename,
+                        resolvedMimeType
+                );
+            }
+
+            // ---- RESIZE ----
+            BufferedImage thumbnailImage = resizeImage(bufferedImage, 200);
+            BufferedImage mediumImage = resizeImage(bufferedImage, 600);
+            BufferedImage largeImage = resizeImage(bufferedImage, 1200);
+
+            String newThumbnailId = storeResizedImage(
+                    thumbnailImage,
+                    "thumb_" + originalFilename,
+                    formatName,
+                    resizedMimeType,
+                    thumbnailsGridFsBucket
+            );
+
+            String newMediumId = storeResizedImage(
+                    mediumImage,
+                    "medium_" + originalFilename,
+                    formatName,
+                    resizedMimeType,
+                    mediumGridFsBucket
+            );
+
+            String newLargeId = storeResizedImage(
+                    largeImage,
+                    "large_" + originalFilename,
+                    formatName,
+                    resizedMimeType,
+                    largeGridFsBucket
+            );
+
+            // ---- DELETE OLD FILES ----
+            if (image.getImageUrl() != null && !image.getImageUrl().isBlank()) {
+                imagesGridFsBucket.delete(new ObjectId(image.getImageUrl()));
+            }
+
+            if (image.getResolutions() != null) {
+                if (image.getResolutions().getThumbnail() != null && !image.getResolutions().getThumbnail().isBlank()) {
+                    thumbnailsGridFsBucket.delete(new ObjectId(image.getResolutions().getThumbnail()));
+                }
+                if (image.getResolutions().getMedium() != null && !image.getResolutions().getMedium().isBlank()) {
+                    mediumGridFsBucket.delete(new ObjectId(image.getResolutions().getMedium()));
+                }
+                if (image.getResolutions().getLarge() != null && !image.getResolutions().getLarge().isBlank()) {
+                    largeGridFsBucket.delete(new ObjectId(image.getResolutions().getLarge()));
+                }
+            }
+
+            // ---- UPDATE IMAGE ----
+            image.setImageUrl(newOriginalFileId.toHexString());
+
+            image.setResolutions(ImageResolutions.builder()
+                    .thumbnail(newThumbnailId)
+                    .medium(newMediumId)
+                    .large(newLargeId)
+                    .build());
+
+            image.setImageMetaData(ImageMetaData.builder()
+                    .fileSize(imageFile.getSize())
+                    .format(resolvedMimeType)
+                    .dimensions(new Dimensions(width, height))
+                    .build());
         }
 
         image.setUpdatedAt(Instant.now());
@@ -254,6 +387,10 @@ public class ImageService {
     // Used by DELETE /api/images/{id}
     // Deletes image if user is owner or admin
     public void deleteImage(String id, Authentication authentication) {
+
+        if (authentication == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authentication is required");
+        }
 
         Image image = findById(id);
 

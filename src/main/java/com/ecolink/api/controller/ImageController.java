@@ -77,13 +77,26 @@ public class ImageController {
         return imageService.findById(id);
     }
 
-    @PatchMapping("/images/{id}")
+    @PatchMapping(value = "/images/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Image> updateImage(
             @PathVariable String id,
-            @RequestBody UpdateImageRequest request,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestPart(value = "title", required = false) String title,
+            @RequestPart(value = "alt_text", required = false) String altText,
+            @RequestPart(value = "description", required = false) String description,
+            @RequestPart(value = "caption", required = false) String caption,
+            @RequestPart(value = "isPublished", required = false) Boolean isPublished,
             Authentication authentication
-    ){
-        Image updatedImage = imageService.updateImageMetadata(id, request, authentication);
+    ) throws IOException {
+
+        UpdateImageRequest request = new UpdateImageRequest();
+        request.setTitle(title);
+        request.setAlt_text(altText);
+        request.setDescription(description);
+        request.setCaption(caption);
+        request.setIsPublished(isPublished);
+
+        Image updatedImage = imageService.updateImage(id, request, imageFile, authentication);
         return ResponseEntity.ok(updatedImage);
     }
 
