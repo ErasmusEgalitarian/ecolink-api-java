@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Optional;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import org.bson.Document;
+import com.ecolink.api.service.ImageProcessingService;
+
 @Service
 public class ImageService {
 
@@ -40,19 +42,22 @@ public class ImageService {
     private final GridFSBucket thumbnailsGridFsBucket;
     private final GridFSBucket mediumGridFsBucket;
     private final GridFSBucket largeGridFsBucket;
+    private final ImageProcessingService imageProcessingService;
 
     public ImageService(ImageRepository imageRepository,
                         GridFsTemplate gridFsTemplate,
                         GridFSBucket imagesGridFsBucket,
                         GridFSBucket thumbnailsGridFsBucket,
                         GridFSBucket mediumGridFsBucket,
-                        GridFSBucket largeGridFsBucket) {
+                        GridFSBucket largeGridFsBucket,
+                        ImageProcessingService imageProcessingService) {
         this.imageRepository = imageRepository;
         this.gridFsTemplate = gridFsTemplate;
         this.imagesGridFsBucket = imagesGridFsBucket;
         this.thumbnailsGridFsBucket = thumbnailsGridFsBucket;
         this.mediumGridFsBucket = mediumGridFsBucket;
         this.largeGridFsBucket = largeGridFsBucket;
+        this.imageProcessingService = imageProcessingService;
     }
 
 
@@ -75,30 +80,11 @@ public class ImageService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "alt_text is required");
         }
 
-        String contentType = imageFile.getContentType();
+        validateImageFile(imageFile);
+        String resolvedMimeType = resolveMimeType(imageFile);
         String filename = imageFile.getOriginalFilename() != null
                 ? imageFile.getOriginalFilename().toLowerCase()
                 : "";
-
-        boolean validContentType = List.of("image/jpeg", "image/png", "image/webp", "image/gif")
-                .contains(contentType);
-
-        boolean validExtension = filename.endsWith(".jpg")
-                || filename.endsWith(".jpeg")
-                || filename.endsWith(".png")
-                || filename.endsWith(".webp")
-                || filename.endsWith(".gif");
-
-        String resolvedMimeType = resolveMimeType(imageFile);
-
-        if (!validContentType && !validExtension) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image format");
-        }
-
-        long maxSize = 10L * 1024 * 1024;
-        if (imageFile.getSize() > maxSize) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "File too large");
-        }
 
         BufferedImage bufferedImage = ImageIO.read(imageFile.getInputStream());
         if (bufferedImage == null) {
@@ -120,38 +106,6 @@ public class ImageService {
         String formatName = detectFormatName(filename);
         String resizedMimeType = formatNameToMimeType(formatName);
 
-        BufferedImage thumbnailImage = resizeImage(bufferedImage, 200);
-        BufferedImage mediumImage = resizeImage(bufferedImage, 600);
-        BufferedImage largeImage = resizeImage(bufferedImage, 1200);
-
-        String thumbnailFileId = storeResizedImage(
-                thumbnailImage,
-                "thumb_" + imageFile.getOriginalFilename(),
-                formatName,
-                resizedMimeType,
-                thumbnailsGridFsBucket
-        );
-
-        String mediumFileId = storeResizedImage(
-                mediumImage,
-                "medium_" + imageFile.getOriginalFilename(),
-                formatName,
-                resizedMimeType,
-                mediumGridFsBucket
-        );
-        String largeFileId = storeResizedImage(
-                largeImage,
-                "large_" + imageFile.getOriginalFilename(),
-                formatName,
-                resizedMimeType,
-                largeGridFsBucket
-        );
-        ImageResolutions resolutions = ImageResolutions.builder()
-                .thumbnail(thumbnailFileId)
-                .medium(mediumFileId)
-                .large(largeFileId)
-                .build();
-
         ImageMetaData metaData = ImageMetaData.builder()
                 .fileSize(imageFile.getSize())
                 .format(resolvedMimeType)
@@ -171,10 +125,20 @@ public class ImageService {
                 .createdBy(currentUsername)
                 .isPublished(false)
                 .imageMetaData(metaData)
-                .resolutions(resolutions)
                 .build();
 
-        return imageRepository.save(image);
+        Image savedImage = imageRepository.save(image);
+
+        imageProcessingService.processImageResolutionsAsync(
+                savedImage,
+                bufferedImage,
+                imageFile.getOriginalFilename(),
+                formatName,
+                resizedMimeType
+        );
+
+        return savedImage;
+
     }
 
 
@@ -266,28 +230,7 @@ public class ImageService {
         // ---- FILE REPLACEMENT ----
         if (imageFile != null && !imageFile.isEmpty()) {
 
-            String contentType = imageFile.getContentType();
-            String filename = imageFile.getOriginalFilename() != null
-                    ? imageFile.getOriginalFilename().toLowerCase()
-                    : "";
-
-            boolean validContentType = List.of("image/jpeg", "image/png", "image/webp", "image/gif")
-                    .contains(contentType);
-
-            boolean validExtension = filename.endsWith(".jpg")
-                    || filename.endsWith(".jpeg")
-                    || filename.endsWith(".png")
-                    || filename.endsWith(".webp")
-                    || filename.endsWith(".gif");
-
-            if (!validContentType && !validExtension) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image format");
-            }
-
-            long maxSize = 10L * 1024 * 1024;
-            if (imageFile.getSize() > maxSize) {
-                throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "File too large");
-            }
+            validateImageFile(imageFile);
 
             BufferedImage bufferedImage = ImageIO.read(imageFile.getInputStream());
             if (bufferedImage == null) {
@@ -318,59 +261,19 @@ public class ImageService {
             }
 
             // ---- RESIZE ----
-            BufferedImage thumbnailImage = resizeImage(bufferedImage, 200);
-            BufferedImage mediumImage = resizeImage(bufferedImage, 600);
-            BufferedImage largeImage = resizeImage(bufferedImage, 1200);
-
-            String newThumbnailId = storeResizedImage(
-                    thumbnailImage,
-                    "thumb_" + originalFilename,
+            ImageResolutions newResolutions = generateAndStoreResolutions(
+                    bufferedImage,
+                    originalFilename,
                     formatName,
-                    resizedMimeType,
-                    thumbnailsGridFsBucket
+                    resizedMimeType
             );
 
-            String newMediumId = storeResizedImage(
-                    mediumImage,
-                    "medium_" + originalFilename,
-                    formatName,
-                    resizedMimeType,
-                    mediumGridFsBucket
-            );
-
-            String newLargeId = storeResizedImage(
-                    largeImage,
-                    "large_" + originalFilename,
-                    formatName,
-                    resizedMimeType,
-                    largeGridFsBucket
-            );
-
-            // ---- DELETE OLD FILES ----
-            if (image.getImageUrl() != null && !image.getImageUrl().isBlank()) {
-                imagesGridFsBucket.delete(new ObjectId(image.getImageUrl()));
-            }
-
-            if (image.getResolutions() != null) {
-                if (image.getResolutions().getThumbnail() != null && !image.getResolutions().getThumbnail().isBlank()) {
-                    thumbnailsGridFsBucket.delete(new ObjectId(image.getResolutions().getThumbnail()));
-                }
-                if (image.getResolutions().getMedium() != null && !image.getResolutions().getMedium().isBlank()) {
-                    mediumGridFsBucket.delete(new ObjectId(image.getResolutions().getMedium()));
-                }
-                if (image.getResolutions().getLarge() != null && !image.getResolutions().getLarge().isBlank()) {
-                    largeGridFsBucket.delete(new ObjectId(image.getResolutions().getLarge()));
-                }
-            }
+            deleteImageFiles(image);
 
             // ---- UPDATE IMAGE ----
             image.setImageUrl(newOriginalFileId.toHexString());
 
-            image.setResolutions(ImageResolutions.builder()
-                    .thumbnail(newThumbnailId)
-                    .medium(newMediumId)
-                    .large(newLargeId)
-                    .build());
+            image.setResolutions(newResolutions);
 
             image.setImageMetaData(ImageMetaData.builder()
                     .fileSize(imageFile.getSize())
@@ -406,25 +309,7 @@ public class ImageService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "You are not allowed to delete this image");
         }
-
-        if (image.getImageUrl() != null && !image.getImageUrl().isBlank()) {
-            imagesGridFsBucket.delete(new ObjectId(image.getImageUrl()));
-        }
-
-        if (image.getResolutions() != null) {
-            if (image.getResolutions().getThumbnail() != null && !image.getResolutions().getThumbnail().isBlank()) {
-                thumbnailsGridFsBucket.delete(new ObjectId(image.getResolutions().getThumbnail()));
-            }
-
-            if (image.getResolutions().getMedium() != null && !image.getResolutions().getMedium().isBlank()) {
-                mediumGridFsBucket.delete(new ObjectId(image.getResolutions().getMedium()));
-            }
-
-            if (image.getResolutions().getLarge() != null && !image.getResolutions().getLarge().isBlank()) {
-                largeGridFsBucket.delete(new ObjectId(image.getResolutions().getLarge()));
-            }
-        }
-
+        deleteImageFiles(image);
         imageRepository.deleteById(id);
     }
 
@@ -455,6 +340,49 @@ public class ImageService {
             return fileId.toHexString();
         }
     }
+
+
+private ImageResolutions generateAndStoreResolutions(
+        BufferedImage bufferedImage,
+        String originalFilename,
+        String formatName,
+        String resizedMimeType) throws IOException {
+
+    BufferedImage thumbnailImage = resizeImage(bufferedImage, 200);
+    BufferedImage mediumImage = resizeImage(bufferedImage, 600);
+    BufferedImage largeImage = resizeImage(bufferedImage, 1200);
+
+    String thumbnailFileId = storeResizedImage(
+            thumbnailImage,
+            "thumb_" + originalFilename,
+            formatName,
+            resizedMimeType,
+            thumbnailsGridFsBucket
+    );
+
+    String mediumFileId = storeResizedImage(
+            mediumImage,
+            "medium_" + originalFilename,
+            formatName,
+            resizedMimeType,
+            mediumGridFsBucket
+    );
+
+    String largeFileId = storeResizedImage(
+            largeImage,
+            "large_" + originalFilename,
+            formatName,
+            resizedMimeType,
+            largeGridFsBucket
+    );
+
+    return ImageResolutions.builder()
+            .thumbnail(thumbnailFileId)
+            .medium(mediumFileId)
+            .large(largeFileId)
+            .build();
+}
+
 
     private String detectFormatName(String filename) {
         String lower = filename.toLowerCase();
@@ -498,5 +426,55 @@ public class ImageService {
             case "webp" -> "image/webp";
             default -> "image/png";
         };
+    }
+    private void validateImageFile(MultipartFile imageFile) {
+        if (imageFile == null || imageFile.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image file is required");
+        }
+
+        String contentType = imageFile.getContentType();
+        String filename = imageFile.getOriginalFilename() != null
+                ? imageFile.getOriginalFilename().toLowerCase()
+                : "";
+
+        boolean validContentType = List.of("image/jpeg", "image/png", "image/webp", "image/gif")
+                .contains(contentType);
+
+        boolean validExtension = filename.endsWith(".jpg")
+                || filename.endsWith(".jpeg")
+                || filename.endsWith(".png")
+                || filename.endsWith(".webp")
+                || filename.endsWith(".gif");
+
+        if (!validContentType && !validExtension) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported image format");
+        }
+
+        long maxSize = 10L * 1024 * 1024;
+        if (imageFile.getSize() > maxSize) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "File too large");
+        }
+    }
+    private void deleteImageFiles(Image image) {
+        if (image.getImageUrl() != null && !image.getImageUrl().isBlank()) {
+            imagesGridFsBucket.delete(new ObjectId(image.getImageUrl()));
+        }
+
+        if (image.getResolutions() != null) {
+            if (image.getResolutions().getThumbnail() != null
+                    && !image.getResolutions().getThumbnail().isBlank()) {
+                thumbnailsGridFsBucket.delete(new ObjectId(image.getResolutions().getThumbnail()));
+            }
+
+            if (image.getResolutions().getMedium() != null
+                    && !image.getResolutions().getMedium().isBlank()) {
+                mediumGridFsBucket.delete(new ObjectId(image.getResolutions().getMedium()));
+            }
+
+            if (image.getResolutions().getLarge() != null
+                    && !image.getResolutions().getLarge().isBlank()) {
+                largeGridFsBucket.delete(new ObjectId(image.getResolutions().getLarge()));
+            }
+        }
     }
 }
