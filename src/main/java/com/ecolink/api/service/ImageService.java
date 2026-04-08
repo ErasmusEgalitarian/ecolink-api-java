@@ -183,7 +183,6 @@ public class ImageService {
 
         Image image = findById(id);
 
-        // ---- PERMISSION CHECK ----
         String currentUsername = authentication.getName();
 
         boolean isAdmin = authentication.getAuthorities().stream()
@@ -197,9 +196,7 @@ public class ImageService {
                     "You are not allowed to modify this image");
         }
 
-        // ---- METADATA UPDATE ----
         if (request != null) {
-
             if (request.getTitle() != null) {
                 if (request.getTitle().isBlank()) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title cannot be blank");
@@ -227,12 +224,15 @@ public class ImageService {
             }
         }
 
-        // ---- FILE REPLACEMENT ----
-        if (imageFile != null && !imageFile.isEmpty()) {
+        BufferedImage bufferedImage = null;
+        String originalFilename = null;
+        String formatName = null;
+        String resizedMimeType = null;
 
+        if (imageFile != null && !imageFile.isEmpty()) {
             validateImageFile(imageFile);
 
-            BufferedImage bufferedImage = ImageIO.read(imageFile.getInputStream());
+            bufferedImage = ImageIO.read(imageFile.getInputStream());
             if (bufferedImage == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid image file");
             }
@@ -242,15 +242,14 @@ public class ImageService {
 
             String resolvedMimeType = resolveMimeType(imageFile);
 
-            String originalFilename = imageFile.getOriginalFilename() != null
+            originalFilename = imageFile.getOriginalFilename() != null
                     ? imageFile.getOriginalFilename()
                     : "image";
 
             String lowerFilename = originalFilename.toLowerCase();
-            String formatName = detectFormatName(lowerFilename);
-            String resizedMimeType = formatNameToMimeType(formatName);
+            formatName = detectFormatName(lowerFilename);
+            resizedMimeType = formatNameToMimeType(formatName);
 
-            // ---- UPLOAD NEW ORIGINAL ----
             ObjectId newOriginalFileId;
             try (InputStream inputStream = imageFile.getInputStream()) {
                 newOriginalFileId = gridFsTemplate.store(
@@ -260,20 +259,10 @@ public class ImageService {
                 );
             }
 
-            // ---- RESIZE ----
-            ImageResolutions newResolutions = generateAndStoreResolutions(
-                    bufferedImage,
-                    originalFilename,
-                    formatName,
-                    resizedMimeType
-            );
-
             deleteImageFiles(image);
 
-            // ---- UPDATE IMAGE ----
             image.setImageUrl(newOriginalFileId.toHexString());
-
-            image.setResolutions(newResolutions);
+            image.setResolutions(null);
 
             image.setImageMetaData(ImageMetaData.builder()
                     .fileSize(imageFile.getSize())
@@ -284,7 +273,19 @@ public class ImageService {
 
         image.setUpdatedAt(Instant.now());
 
-        return imageRepository.save(image);
+        Image savedImage = imageRepository.save(image);
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            imageProcessingService.processImageResolutionsAsync(
+                    savedImage,
+                    bufferedImage,
+                    originalFilename,
+                    formatName,
+                    resizedMimeType
+            );
+        }
+
+        return savedImage;
     }
 
     // Used by DELETE /api/images/{id}
@@ -312,76 +313,6 @@ public class ImageService {
         deleteImageFiles(image);
         imageRepository.deleteById(id);
     }
-
-    private BufferedImage resizeImage(BufferedImage original, int targetWidth) {
-        return org.imgscalr.Scalr.resize(
-                original,
-                org.imgscalr.Scalr.Method.QUALITY,
-                org.imgscalr.Scalr.Mode.FIT_TO_WIDTH,
-                targetWidth
-        );
-    }
-
-    private String storeResizedImage(BufferedImage image,
-                                     String originalFilename,
-                                     String formatName,
-                                     String mimeType,
-                                     GridFSBucket bucket) throws IOException {
-
-        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
-        javax.imageio.ImageIO.write(image, formatName, outputStream);
-
-        Document metadata = new Document("contentType", mimeType);
-        GridFSUploadOptions options = new GridFSUploadOptions().metadata(metadata);
-
-        try (java.io.ByteArrayInputStream inputStream =
-                     new java.io.ByteArrayInputStream(outputStream.toByteArray())) {
-            ObjectId fileId = bucket.uploadFromStream(originalFilename, inputStream, options);
-            return fileId.toHexString();
-        }
-    }
-
-
-private ImageResolutions generateAndStoreResolutions(
-        BufferedImage bufferedImage,
-        String originalFilename,
-        String formatName,
-        String resizedMimeType) throws IOException {
-
-    BufferedImage thumbnailImage = resizeImage(bufferedImage, 200);
-    BufferedImage mediumImage = resizeImage(bufferedImage, 600);
-    BufferedImage largeImage = resizeImage(bufferedImage, 1200);
-
-    String thumbnailFileId = storeResizedImage(
-            thumbnailImage,
-            "thumb_" + originalFilename,
-            formatName,
-            resizedMimeType,
-            thumbnailsGridFsBucket
-    );
-
-    String mediumFileId = storeResizedImage(
-            mediumImage,
-            "medium_" + originalFilename,
-            formatName,
-            resizedMimeType,
-            mediumGridFsBucket
-    );
-
-    String largeFileId = storeResizedImage(
-            largeImage,
-            "large_" + originalFilename,
-            formatName,
-            resizedMimeType,
-            largeGridFsBucket
-    );
-
-    return ImageResolutions.builder()
-            .thumbnail(thumbnailFileId)
-            .medium(mediumFileId)
-            .large(largeFileId)
-            .build();
-}
 
 
     private String detectFormatName(String filename) {
