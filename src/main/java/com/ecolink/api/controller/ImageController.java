@@ -111,7 +111,7 @@ public class ImageController {
 
         UpdateImageRequest request = new UpdateImageRequest();
         request.setTitle(title);
-        request.setAlt_text(altText);
+        request.setAltText(altText);
         request.setDescription(description);
         request.setCaption(caption);
         request.setIsPublished(isPublished);

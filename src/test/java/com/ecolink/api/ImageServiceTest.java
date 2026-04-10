@@ -19,6 +19,14 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import com.ecolink.api.model.ImageResolutions;
+import org.bson.types.ObjectId;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -272,5 +280,35 @@ class ImageServiceTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    @Test
+    void deleteImage_whenOwner_shouldDeleteImageAndAllGridFsFiles() {
+        String originalId = new ObjectId().toHexString();
+        String thumbnailId = new ObjectId().toHexString();
+        String mediumId = new ObjectId().toHexString();
+        String largeId = new ObjectId().toHexString();
+
+        Image image = new Image();
+        image.setId("img123");
+        image.setCreatedBy("user1");
+        image.setImageUrl(originalId);
+
+        ImageResolutions resolutions = new ImageResolutions();
+        resolutions.setThumbnail(thumbnailId);
+        resolutions.setMedium(mediumId);
+        resolutions.setLarge(largeId);
+        image.setResolutions(resolutions);
+
+        when(imageRepository.findById("img123")).thenReturn(Optional.of(image));
+        when(authentication.getName()).thenReturn("user1");
+        when(authentication.getAuthorities()).thenReturn(List.of());
+
+        imageService.deleteImage("img123", authentication);
+
+        verify(imagesGridFsBucket).delete(new ObjectId(originalId));
+        verify(thumbnailsGridFsBucket).delete(new ObjectId(thumbnailId));
+        verify(mediumGridFsBucket).delete(new ObjectId(mediumId));
+        verify(largeGridFsBucket).delete(new ObjectId(largeId));
+        verify(imageRepository).deleteById("img123");
     }
 }

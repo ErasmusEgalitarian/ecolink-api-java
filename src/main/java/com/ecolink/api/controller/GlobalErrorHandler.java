@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartException;
 
@@ -31,11 +32,13 @@ public class GlobalErrorHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        ex.printStackTrace();
+
         ErrorResponse response = ErrorResponse.builder()
                 .success(false)
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message("An unexpected error occurred")
+                .message(ex.getClass().getSimpleName() + ": " + ex.getMessage())
                 .timestamp(Instant.now())
                 .build();
 
@@ -67,4 +70,17 @@ public class GlobalErrorHandler {
 
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
     }
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException ex) {
+        ErrorResponse response = ErrorResponse.builder()
+                .success(false)
+                .status(400)
+                .error("Bad Request")
+                .message("Missing request part: " + ex.getRequestPartName())
+                .timestamp(Instant.now())
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
 }
