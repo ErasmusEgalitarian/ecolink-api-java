@@ -1,6 +1,6 @@
 package com.ecolink.api.controller;
 
-import com.ecolink.api.dto.EcoPointListItemDTO;
+import com.ecolink.api.dto.EcopointListItemDTO;
 import com.ecolink.api.service.EcoPointService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +37,7 @@ public class EcopointController {
 			));
 		}
 
-		Page<EcoPointListItemDTO> result = ecoPointService.getEcoPoints(lat, lng, page, limit);
+		Page<EcopointListItemDTO> result = ecoPointService.getEcoPoints(lat, lng, page, limit);
 
 		return ResponseEntity.ok(Map.of(
 				"success", true,
