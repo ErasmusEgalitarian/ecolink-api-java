@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -43,6 +44,7 @@ class ImageControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void shouldReturnImages() throws Exception {
         mockMvc.perform(get("/api/images?page=1&limit=20"))
                 .andExpect(status().isOk())
@@ -53,6 +55,7 @@ class ImageControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     void shouldReturnBadRequestForInvalidPagination() throws Exception {
         mockMvc.perform(get("/api/images?page=0&limit=200"))
                 .andExpect(status().isBadRequest())
