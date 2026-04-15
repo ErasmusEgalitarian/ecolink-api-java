@@ -198,7 +198,7 @@ class ImageServiceTest {
 
         UpdateImageRequest request = new UpdateImageRequest();
         request.setTitle("New title");
-        request.setAlt_text("New alt");
+        request.setAltText("New alt");
         request.setDescription("New desc");
         request.setCaption("New caption");
         request.setIsPublished(true);

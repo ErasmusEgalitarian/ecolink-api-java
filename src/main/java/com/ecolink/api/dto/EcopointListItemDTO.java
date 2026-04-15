@@ -34,5 +34,6 @@ public class EcopointListItemDTO {
     public String getStatus() { return status; }
     public String getThumbnailUrl() { return thumbnailUrl; }
 }
-// EcoPointListItemDTO.java definerer præcis hvilke felter der sendes tilbage til appen som svar,
+
+// EcoPointListItemDTO.java definerer praecis hvilke felter der sendes tilbage til appen som svar,
 // fx navn, adresse og distanceKm.
