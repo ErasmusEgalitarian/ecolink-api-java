@@ -204,11 +204,11 @@ public class ImageService {
                 image.setTitle(request.getTitle());
             }
 
-            if (request.getAlt_text() != null) {
-                if (request.getAlt_text().isBlank()) {
+            if (request.getAltText() != null) {
+                if (request.getAltText().isBlank()) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "alt_text cannot be blank");
                 }
-                image.setAlt_text(request.getAlt_text());
+                image.setAlt_text(request.getAltText());
             }
 
             if (request.getDescription() != null) {
