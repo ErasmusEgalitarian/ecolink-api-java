@@ -1,9 +1,14 @@
 package com.ecolink.api.dto;
 
-public class APIResponse {
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description="API response wrapper")
+public class APIResponse {
+	@Schema(description="Tells if the request was successful")
 	private boolean success;
+	@Schema(description="Response data")
 	private Object data;
+	@Schema(description="Extra message")
 	private String message;
 	
 	public APIResponse(boolean success, Object data, String message) {
