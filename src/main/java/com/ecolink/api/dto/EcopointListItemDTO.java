@@ -4,14 +4,23 @@ import java.util.List;
 
 import com.ecolink.api.model.AcceptedMaterial;
 
-public class EcopointListItemDTO {
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description="A DTO that explains how a Ecopoint is showed on a list")
+public class EcopointListItemDTO {
+    @Schema(description="Gives the Ecopoint a random ID", example="2h1gd1132h1h31")   
     private String id;
+    @Schema(description="Gives the ecopoint the name of the ecopoint", example="Ecopoint UNB 1")
     private String name;
+    @Schema(description="Gives the adress of the ecopoint", example="A.C meyers vænge 3")
     private String address;
+    @Schema(description="Tell how far the ecopoint is away i km", example="1.4 km")
     private Double distanceKm;
+    @Schema(description="Gives a list of what materials the ecopoint accepts", example="Aluminium and plastic")
     private List<AcceptedMaterial> acceptedMaterials;
+    @Schema(description="tells if the ecopoint is under maintaince or not")
     private String status;
+    @Schema(description="URL to a thumbmail picture")
     private String thumbnailUrl;
 
     public EcopointListItemDTO(String id, String name, String address,
