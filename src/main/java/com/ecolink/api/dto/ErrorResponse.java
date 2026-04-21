@@ -24,6 +24,6 @@ public class ErrorResponse {
     @Schema(description = "Detailed error message", example = "Missing parameter: page")
     private String message;
 
-    @schema(description = "Timestamp when the error occurred", example = "2024-01-01T12:00:00Z")
+    @Schema(description = "Timestamp when the error occurred", example = "2024-01-01T12:00:00Z")
     private Instant timestamp;
 }

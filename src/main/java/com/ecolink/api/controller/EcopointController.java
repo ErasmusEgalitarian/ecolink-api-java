@@ -3,6 +3,11 @@ package com.ecolink.api.controller;
 import com.ecolink.api.dto.EcopointListItemDTO;
 import com.ecolink.api.service.EcoPointService;
 import com.ecolink.api.service.ImageService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,12 +28,19 @@ public class EcopointController {
 		this.ecoPointService = ecoPointService;
 		this.imageService = imageService;
 	}
-
+	@Operation(summary="Test API", description="simple endpoint to verify that the API is running")
+	@ApiResponse(value={
+			@ApiResponse(responseCode = "200", description = "API is running")
+	})
 	@GetMapping("/test")
 	public String test() {
 		return "API is running";
 	}
-
+	@Operation(summary="Get Ecopoint", description="Returns a list of ecopoints, filteret by latitude and longitude")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Eco points retrieved successfully"),
+			@ApiResponse(responseCode = "400", description = "Invalid pagination parameters")
+	})
 	@GetMapping("/ecopoints")
 	public ResponseEntity<?> getEcoPoints(
 			@RequestParam(required = false) Double lat,
